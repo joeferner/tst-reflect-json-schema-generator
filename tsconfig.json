@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist/",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "noUncheckedIndexedAccess": true,
+    "plugins": [
+      {
+        "transform": "tst-reflect-transformer"
+      }
+    ]
+  },
+  "exclude": ["node_modules/", "public/", "dist/", "test/"]
+}
