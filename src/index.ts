@@ -1,5 +1,5 @@
 import { JSONSchema6, JSONSchema6Definition } from "json-schema";
-import { Type } from "tst-reflect";
+import { Type, TypeKind } from "tst-reflect";
 
 export function createJsonSchema(type: Type): JSONSchema6 {
   const definitions: Record<string, JSONSchema6Definition> = {};
@@ -24,6 +24,21 @@ function createDefinitionForType(
     return { type: "number" };
   }
 
+  if (
+    type.kind == TypeKind.Container &&
+    type.fullName === "optional" &&
+    type.baseType?.fullName === "Object" &&
+    type.isUnion()
+  ) {
+    const types = type.types.filter((t) => t.fullName !== "undefined");
+
+    const onlyType = types[0];
+    if (types.length === 1 && onlyType) {
+      return createDefinitionForType(onlyType, definitions);
+    }
+    throw new Error("unhandled type");
+  }
+
   const ref: JSONSchema6Definition = {
     $ref: `#/definitions/${type.name}`,
   };
@@ -34,6 +49,13 @@ function createDefinitionForType(
 
   const properties: Record<string, JSONSchema6Definition> = {};
   const required: string[] = [];
+  const def: JSONSchema6Definition = {
+    type: "object",
+    additionalProperties: false,
+    properties,
+    required,
+  };
+
   for (const property of type.getProperties()) {
     properties[property.name] = createDefinitionForType(
       property.type,
@@ -44,13 +66,7 @@ function createDefinitionForType(
     }
   }
 
-  definitions[type.name] = {
-    type: "object",
-    additionalProperties: false,
-    properties,
-    required,
-  };
-
+  definitions[type.name] = def;
   return ref;
 }
 
