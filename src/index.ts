@@ -1,5 +1,10 @@
-import { JSONSchema6, JSONSchema6Definition } from "json-schema";
+import {
+  JSONSchema6,
+  JSONSchema6Definition,
+  JSONSchema6TypeName,
+} from "json-schema";
 import { Type, TypeKind } from "tst-reflect";
+import ts from "typescript";
 
 export function createJsonSchema(type: Type): JSONSchema6 {
   const definitions: Record<string, JSONSchema6Definition> = {};
@@ -15,7 +20,7 @@ export function createJsonSchema(type: Type): JSONSchema6 {
 function createDefinitionForType(
   type: Type,
   definitions: Record<string, JSONSchema6Definition>
-): JSONSchema6Definition {
+): JSONSchema6 {
   if (type.fullName === "String") {
     return { type: "string" };
   }
@@ -39,7 +44,7 @@ function createDefinitionForType(
     throw new Error("unhandled type");
   }
 
-  const ref: JSONSchema6Definition = {
+  const ref: JSONSchema6 = {
     $ref: `#/definitions/${type.name}`,
   };
 
@@ -49,7 +54,7 @@ function createDefinitionForType(
 
   const properties: Record<string, JSONSchema6Definition> = {};
   const required: string[] = [];
-  const def: JSONSchema6Definition = {
+  const def: JSONSchema6 = {
     type: "object",
     additionalProperties: false,
     properties,
@@ -57,6 +62,13 @@ function createDefinitionForType(
   };
 
   for (const property of type.getProperties()) {
+    if (property.name === ts.InternalSymbolName.Index) {
+      def.additionalProperties = createDefinitionForTypes(
+        property.type.types,
+        definitions
+      );
+      continue;
+    }
     properties[property.name] = createDefinitionForType(
       property.type,
       definitions
@@ -70,20 +82,21 @@ function createDefinitionForType(
   return ref;
 }
 
-const a = {
-  MyObject: {
-    additionalProperties: false,
-    properties: {
-      propA: {
-        type: "number",
-      },
-      propB: {
-        type: "number",
-      },
-      propC: {
-        type: "string",
-      },
-    },
-    required: ["propA", "propB", "propC"],
-  },
-};
+function createDefinitionForTypes(
+  types: readonly Type[],
+  definitions: Record<string, JSONSchema6Definition>
+): JSONSchema6 {
+  const typesDefinitions = types.map((t) =>
+    createDefinitionForType(t, definitions)
+  );
+  if (typesDefinitions.every(isSimpleType)) {
+    return { type: typesDefinitions.flatMap((t) => t.type) };
+  }
+  throw new Error("unhandled, multiple complex types");
+}
+
+function isSimpleType(t: JSONSchema6): t is {
+  type: JSONSchema6TypeName | JSONSchema6TypeName[];
+} {
+  return Object.keys(t).length === 1 && !!t.type;
+}

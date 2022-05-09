@@ -13,18 +13,17 @@ specifiers:
   prettier: ^2.6.2
   ts-jest: ^28.0.1
   ts-node: ^10.7.0
-  tst-reflect: ^0.7.4
-  tst-reflect-transformer: ^0.9.6
+  tst-reflect: ../zzzexternal/tst-reflect/runtime
+  tst-reflect-transformer: ../zzzexternal/tst-reflect/transformer
   ttypescript: ^1.5.13
   typescript: ^4.6.4
 
 dependencies:
-  tst-reflect: 0.7.4
-  typescript: 4.6.4
+  '@types/json-schema': 7.0.11
+  tst-reflect: link:../zzzexternal/tst-reflect/runtime
 
 devDependencies:
   '@types/jest': 27.5.0
-  '@types/json-schema': 7.0.11
   '@types/node': 17.0.31
   '@typescript-eslint/eslint-plugin': 5.22.0_lnjlwhtxjffjmj5o7dnwvwyqxq
   '@typescript-eslint/parser': 5.22.0_t725usgvqspm5woeqpaxbfp2qu
@@ -35,8 +34,9 @@ devDependencies:
   prettier: 2.6.2
   ts-jest: 28.0.1_z3fx76c5ksuwr36so7o5uc2kcy
   ts-node: 10.7.0_l47be6km5p57gglrggidw5gsgm
-  tst-reflect-transformer: 0.9.6
+  tst-reflect-transformer: link:../zzzexternal/tst-reflect/transformer
   ttypescript: 1.5.13_v73b3xgw6ydytm4gxrazwris7i
+  typescript: 4.6.4
 
 packages:
 
@@ -790,7 +790,6 @@ packages:
 
   /@types/json-schema/7.0.11:
     resolution: {integrity: sha512-wOuvG1SN4Us4rez+tylwwwCV1psiNVOkJeM3AUWUNWg/jDQY2+HE/444y5gc+jBmRqASOm2Oeh5c1axHobwRKQ==}
-    dev: true
 
   /@types/node/17.0.31:
     resolution: {integrity: sha512-AR0x5HbXGqkEx9CadRH3EBYx/VkiUgZIhP4wvPn/+5KIsgpNoyFaRlVe0Zlx9gRtg8fA06a9tskE2MSN7TcG4Q==}
@@ -3304,16 +3303,6 @@ packages:
     resolution: {integrity: sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==}
     dev: true
 
-  /tst-reflect-transformer/0.9.6:
-    resolution: {integrity: sha512-f4yfN9rud11Q/6efYH/bCs+ki28IMzXMEXSDUvCLI3q0BT4gXIHeV4LfH8GWrnyp9imofkX7GPr/LdMxfhYOzQ==}
-    dependencies:
-      tst-reflect: 0.7.4
-      typescript: 4.6.4
-    dev: true
-
-  /tst-reflect/0.7.4:
-    resolution: {integrity: sha512-yHlORAaQquvIlWxBJ+qwGUn2XyQWHms71tCj2hRC0Bt23PeIwztmLMLLDDHrzlWrZXd0E3bF9xRA+C2P66Sh8Q==}
-
   /tsutils/3.21.0_typescript@4.6.4:
     resolution: {integrity: sha512-mHKK3iUXL+3UF6xL5k0PEhKRUBKPBCv/+RkEOpjRWxxx27KKRBmmA60A9pgOUvMi8GKhRMPEmjBRPzs2W7O1OA==}
     engines: {node: '>= 6'}
@@ -3368,6 +3357,7 @@ packages:
     resolution: {integrity: sha512-9ia/jWHIEbo49HfjrLGfKbZSuWo9iTMwXO+Ca3pRsSpbsMbc7/IU8NKdCZVRRBafVPGnoJeFL76ZOAA84I9fEg==}
     engines: {node: '>=4.2.0'}
     hasBin: true
+    dev: true
 
   /undefsafe/2.0.5:
     resolution: {integrity: sha512-WxONCrssBM8TSPRqN5EmsjVrsv4A8X12J4ArBiiayv3DyyG3ZlIg6yysuuSYdZsVz3TKcTg2fd//Ujd4CHV1iA==}
