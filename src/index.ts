@@ -1,13 +1,13 @@
 import {
-  JSONSchema6,
-  JSONSchema6Definition,
-  JSONSchema6TypeName,
+  JSONSchema7,
+  JSONSchema7Definition,
+  JSONSchema7TypeName,
 } from "json-schema";
-import { Type, TypeKind } from "tst-reflect";
+import { Property, Type, TypeKind } from "tst-reflect";
 import ts from "typescript";
 
-export function createJsonSchema(type: Type): JSONSchema6 {
-  const definitions: Record<string, JSONSchema6Definition> = {};
+export function createJsonSchema(type: Type): JSONSchema7 {
+  const definitions: Record<string, JSONSchema7Definition> = {};
   createDefinitionForType(type, definitions);
 
   return {
@@ -19,8 +19,8 @@ export function createJsonSchema(type: Type): JSONSchema6 {
 
 function createDefinitionForType(
   type: Type,
-  definitions: Record<string, JSONSchema6Definition>
-): JSONSchema6 {
+  definitions: Record<string, JSONSchema7Definition>
+): JSONSchema7 {
   if (type.fullName === "String") {
     return { type: "string" };
   }
@@ -44,7 +44,7 @@ function createDefinitionForType(
     throw new Error("unhandled type");
   }
 
-  const ref: JSONSchema6 = {
+  const ref: JSONSchema7 = {
     $ref: `#/definitions/${type.name}`,
   };
 
@@ -52,14 +52,19 @@ function createDefinitionForType(
     return ref;
   }
 
-  const properties: Record<string, JSONSchema6Definition> = {};
+  const properties: Record<string, JSONSchema7Definition> = {};
   const required: string[] = [];
-  const def: JSONSchema6 = {
+  const def: JSONSchema7 = {
     type: "object",
     additionalProperties: false,
     properties,
     required,
   };
+
+  const comment = getComment(type);
+  if (comment) {
+    def.$comment = comment;
+  }
 
   for (const property of type.getProperties()) {
     if (property.name === ts.InternalSymbolName.Index) {
@@ -69,10 +74,16 @@ function createDefinitionForType(
       );
       continue;
     }
-    properties[property.name] = createDefinitionForType(
-      property.type,
-      definitions
-    );
+
+    const p = createDefinitionForType(property.type, definitions);
+
+    const comment = getComment(property);
+    if (comment) {
+      p.$comment = comment;
+    }
+
+    properties[property.name] = p;
+
     if (!property.optional) {
       required.push(property.name);
     }
@@ -84,8 +95,8 @@ function createDefinitionForType(
 
 function createDefinitionForTypes(
   types: readonly Type[],
-  definitions: Record<string, JSONSchema6Definition>
-): JSONSchema6 {
+  definitions: Record<string, JSONSchema7Definition>
+): JSONSchema7 {
   const typesDefinitions = types.map((t) =>
     createDefinitionForType(t, definitions)
   );
@@ -95,8 +106,19 @@ function createDefinitionForTypes(
   throw new Error("unhandled, multiple complex types");
 }
 
-function isSimpleType(t: JSONSchema6): t is {
-  type: JSONSchema6TypeName | JSONSchema6TypeName[];
+function isSimpleType(t: JSONSchema7): t is {
+  type: JSONSchema7TypeName | JSONSchema7TypeName[];
 } {
   return Object.keys(t).length === 1 && !!t.type;
+}
+
+function getComment(type: Type | Property): string | undefined {
+  if (type.jsDocs && type.jsDocs.length > 0) {
+    return type.jsDocs
+      .flatMap((d) => d.tags)
+      .filter((t) => t?.comment && t?.tagName === "comment")
+      .map((t) => t?.comment)
+      .join("\n");
+  }
+  return undefined;
 }
