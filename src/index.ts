@@ -21,12 +21,20 @@ function createDefinitionForType(
   type: Type,
   definitions: Record<string, JSONSchema7Definition>
 ): JSONSchema7 {
-  if (type.fullName === "String") {
-    return { type: "string" };
+  if (type.fullName === "String" || type.fullName === "string") {
+    const def: JSONSchema7 = { type: "string" };
+    if (type.literalValue) {
+      def.const = type.literalValue;
+    }
+    return def;
   }
 
   if (type.fullName === "Number") {
     return { type: "number" };
+  }
+
+  if (type.fullName === "Boolean") {
+    return { type: "boolean" };
   }
 
   if (
@@ -66,7 +74,7 @@ function createDefinitionForType(
     def.$comment = comment;
   }
 
-  for (const property of type.getProperties()) {
+  for (const property of [...getProperties(type)].sort(comparePropertyNames)) {
     if (property.name === ts.InternalSymbolName.Index) {
       def.additionalProperties = createDefinitionForTypes(
         property.type.types,
@@ -127,4 +135,21 @@ function getComment(type: Type | Property): string | undefined {
       .join("\n");
   }
   return undefined;
+}
+
+function* getProperties(type: Type): Generator<Property, any, any> {
+  const propertyNames = type.getProperties().map((p) => p.name);
+  yield* type.getProperties();
+  if (type.baseType) {
+    for (const p of getProperties(type.baseType)) {
+      if (propertyNames.includes(p.name)) {
+        continue;
+      }
+      yield p;
+    }
+  }
+}
+
+function comparePropertyNames(a: Property, b: Property): number {
+  return a.name > b.name ? 1 : -1;
 }
