@@ -89,6 +89,12 @@ function createDefinitionForType(
     }
   }
 
+  if (def.required?.length === 0) {
+    delete def.required;
+  }
+  if (def.properties && Object.keys(def.properties).length === 0) {
+    delete def.properties;
+  }
   definitions[type.name] = def;
   return ref;
 }

@@ -6,35 +6,31 @@ import { MyObject as InterfaceExtraPropsMyObject } from "./valid/interface-extra
 import { MyObject as AnnotationCommentMyObject } from "./valid/annotation-comment/main";
 
 describe("valid", () => {
-  it(
-    "annotation-comment",
+  test("annotation-comment", () => {
     assertValidSchema(
       "valid/annotation-comment",
       getType<AnnotationCommentMyObject>()
-    )
-  );
+    );
+  });
 
-  it(
-    "interface-extra-props",
+  test("interface-extra-props", () => {
     assertValidSchema(
       "valid/interface-extra-props",
       getType<InterfaceExtraPropsMyObject>()
-    )
-  );
+    );
+  });
 
-  it(
-    "interface-multi",
+  test("interface-multi", () => {
     assertValidSchema(
       "valid/interface-multi",
       getType<InterfaceMultiMyObject>()
-    )
-  );
+    );
+  });
 
-  it(
-    "interface-single",
+  test("interface-single", () => {
     assertValidSchema(
       "valid/interface-single",
       getType<InterfaceSingleMyObject>()
-    )
-  );
+    );
+  });
 });
