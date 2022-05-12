@@ -6,6 +6,8 @@ import { MyObject as InterfaceExtraPropsMyObject } from "./valid/interface-extra
 import { MyObject as AnnotationCommentMyObject } from "./valid/annotation-comment/main";
 import { MyObject as TypeExtendMyObject } from "./valid/type-extend/main";
 import { MyObject as ClassInheritanceMyObject } from "./valid/class-inheritance/main";
+import { MyObject as ClassGenericsMyObject } from "./valid/class-generics/main";
+import { MyObject as GenericSimpleMyObject } from "./valid/generic-simple/main";
 
 describe("valid", () => {
   test("annotation-comment", () => {
@@ -15,11 +17,19 @@ describe("valid", () => {
     );
   });
 
+  test("class-generics", () => {
+    assertValidSchema("valid/class-generics", getType<ClassGenericsMyObject>());
+  });
+
   test("class-inheritance", () => {
     assertValidSchema(
       "valid/class-inheritance",
       getType<ClassInheritanceMyObject>()
     );
+  });
+
+  test("generic-simple", () => {
+    assertValidSchema("valid/generic-simple", getType<GenericSimpleMyObject>());
   });
 
   test("interface-extra-props", () => {

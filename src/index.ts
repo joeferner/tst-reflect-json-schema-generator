@@ -8,10 +8,10 @@ import ts from "typescript";
 
 export function createJsonSchema(type: Type): JSONSchema7 {
   const definitions: Record<string, JSONSchema7Definition> = {};
-  createDefinitionForType(type, definitions);
+  createDefinitionForType(type, undefined, definitions);
 
   return {
-    $ref: `#/definitions/${type.name}`,
+    $ref: `#/definitions/${encodeURIComponent(type.name)}`,
     $schema: "http://json-schema.org/draft-07/schema#",
     definitions,
   };
@@ -19,6 +19,7 @@ export function createJsonSchema(type: Type): JSONSchema7 {
 
 function createDefinitionForType(
   type: Type,
+  genericArguments: ReadonlyArray<Type> | undefined,
   definitions: Record<string, JSONSchema7Definition>
 ): JSONSchema7 {
   if (type.fullName === "String" || type.fullName === "string") {
@@ -47,16 +48,19 @@ function createDefinitionForType(
 
     const onlyType = types[0];
     if (types.length === 1 && onlyType) {
-      return createDefinitionForType(onlyType, definitions);
+      return createDefinitionForType(onlyType, genericArguments, definitions);
     }
     throw new Error("unhandled type");
   }
 
   const ref: JSONSchema7 = {
-    $ref: `#/definitions/${type.name}`,
+    $ref: `#/definitions/${encodeURIComponent(
+      getTypeName(type, genericArguments)
+    )}`,
   };
 
-  if (definitions[type.name]) {
+  const typeName = getTypeName(type, genericArguments);
+  if (definitions[typeName]) {
     return ref;
   }
 
@@ -74,37 +78,67 @@ function createDefinitionForType(
     def.$comment = comment;
   }
 
-  for (const property of [...getProperties(type)].sort(comparePropertyNames)) {
-    if (property.name === ts.InternalSymbolName.Index) {
-      def.additionalProperties = createDefinitionForTypes(
-        property.type.types,
-        definitions
-      );
-      continue;
-    }
-
-    const p = createDefinitionForType(property.type, definitions);
-
-    const comment = getComment(property);
-    if (comment) {
-      p.$comment = comment;
-    }
-
-    properties[property.name] = p;
-
-    if (!property.optional) {
-      required.push(property.name);
-    }
+  for (
+    let t: Type | undefined = type, tGenericArguments = genericArguments;
+    t;
+    tGenericArguments = t?.baseTypeGenericArguments, t = t.baseType
+  ) {
+    updateProperties(t, tGenericArguments, def, definitions);
   }
 
   if (def.required?.length === 0) {
     delete def.required;
+  } else if (def.required) {
+    def.required = [...new Set(def.required)].sort();
   }
   if (def.properties && Object.keys(def.properties).length === 0) {
     delete def.properties;
   }
-  definitions[type.name] = def;
+  definitions[typeName] = def;
   return ref;
+}
+
+function updateProperties(
+  type: Type,
+  genericArguments: ReadonlyArray<Type> | undefined,
+  def: JSONSchema7,
+  definitions: Record<string, JSONSchema7Definition>
+): void {
+  const typeProperties = [...type.getProperties()].sort(comparePropertyNames);
+  for (const property of typeProperties) {
+    try {
+      if (def.properties![property.name]) {
+        continue;
+      }
+
+      if (property.name === ts.InternalSymbolName.Index) {
+        def.additionalProperties = createDefinitionForTypes(
+          property.type.types,
+          definitions
+        );
+        continue;
+      }
+
+      const p = createDefinitionForType(
+        resolveType(property.type, type.getTypeParameters(), genericArguments),
+        property.genericArguments,
+        definitions
+      );
+
+      const comment = getComment(property);
+      if (comment) {
+        p.$comment = comment;
+      }
+
+      def.properties![property.name] = p;
+
+      if (!property.optional) {
+        def.required!.push(property.name);
+      }
+    } catch (err) {
+      throw new Error(`failed on property "${property.name}": ${err}`);
+    }
+  }
 }
 
 function createDefinitionForTypes(
@@ -112,7 +146,7 @@ function createDefinitionForTypes(
   definitions: Record<string, JSONSchema7Definition>
 ): JSONSchema7 {
   const typesDefinitions = types.map((t) =>
-    createDefinitionForType(t, definitions)
+    createDefinitionForType(t, undefined, definitions)
   );
   if (typesDefinitions.every(isSimpleType)) {
     return { type: typesDefinitions.flatMap((t) => t.type) };
@@ -137,19 +171,49 @@ function getComment(type: Type | Property): string | undefined {
   return undefined;
 }
 
-function* getProperties(type: Type): Generator<Property, any, any> {
-  const propertyNames = type.getProperties().map((p) => p.name);
-  yield* type.getProperties();
-  if (type.baseType) {
-    for (const p of getProperties(type.baseType)) {
-      if (propertyNames.includes(p.name)) {
-        continue;
-      }
-      yield p;
-    }
-  }
-}
-
 function comparePropertyNames(a: Property, b: Property): number {
   return a.name > b.name ? 1 : -1;
+}
+
+function getTypeName(type: Type, genericArguments?: readonly Type[]): string {
+  let name = type.name;
+  if (name === "Number" || name === "String" || name === "Boolean") {
+    name = name.toLocaleLowerCase();
+  }
+
+  if (genericArguments) {
+    name += "<";
+    name += genericArguments.map((t) => getTypeName(t));
+    name += ">";
+  }
+  return name;
+}
+
+function resolveType(
+  type: Type,
+  typeParameters: readonly Type[],
+  genericArguments: readonly Type[] | undefined
+): Type {
+  if (type.kind === TypeKind.TypeParameter) {
+    const typeParameterIndex = typeParameters.findIndex(
+      (t) => type.name === t.name
+    );
+    if (typeParameterIndex < 0) {
+      throw new Error(
+        `Could not find type parameter ${type.name} from [${typeParameters.map(
+          (tp) => tp.name
+        )}]`
+      );
+    }
+    const genericArgument = genericArguments?.[typeParameterIndex];
+    if (!genericArgument) {
+      throw new Error(
+        `Could not find type argument ${
+          type.name
+        } from [${genericArguments?.map((tp) => tp.name)}]`
+      );
+    }
+    return genericArgument;
+  }
+  return type;
 }
