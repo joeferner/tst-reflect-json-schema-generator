@@ -8,6 +8,13 @@ import { MyObject as TypeExtendMyObject } from "./valid/type-extend/main";
 import { MyObject as ClassInheritanceMyObject } from "./valid/class-inheritance/main";
 import { MyObject as ClassGenericsMyObject } from "./valid/class-generics/main";
 import { MyObject as GenericSimpleMyObject } from "./valid/generic-simple/main";
+import { MyObject as GenericMultiargsMyObject } from "./valid/generic-multiargs/main";
+import { Enum as EnumsStringEnum } from "./valid/enums-string/main";
+import { Enum as EnumsNumberEnum } from "./valid/enums-number/main";
+import { Enum as EnumsMixedEnum } from "./valid/enums-mixed/main";
+import { MyObject as EnumsMemberMyObject } from "./valid/enums-member/main";
+
+const skipTstReflectError = true;
 
 describe("valid", () => {
   test("annotation-comment", () => {
@@ -25,6 +32,31 @@ describe("valid", () => {
     assertValidSchema(
       "valid/class-inheritance",
       getType<ClassInheritanceMyObject>()
+    );
+  });
+
+  test("enums-member", () => {
+    assertValidSchema("valid/enums-member", getType<EnumsMemberMyObject>());
+  });
+
+  if (!skipTstReflectError) {
+    test("enums-mixed", () => {
+      assertValidSchema("valid/enums-mixed", getType<EnumsMixedEnum>());
+    });
+  }
+
+  test("enums-number", () => {
+    assertValidSchema("valid/enums-number", getType<EnumsNumberEnum>());
+  });
+
+  test("enums-string", () => {
+    assertValidSchema("valid/enums-string", getType<EnumsStringEnum>());
+  });
+
+  test("generic-multiargs", () => {
+    assertValidSchema(
+      "valid/generic-multiargs",
+      getType<GenericMultiargsMyObject>()
     );
   });
 

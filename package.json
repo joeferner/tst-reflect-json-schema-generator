@@ -23,10 +23,12 @@
   "license": "MIT",
   "dependencies": {
     "@types/json-schema": "^7.0.11",
+    "nested-error-stacks": "^2.1.1",
     "tst-reflect": "../zzzexternal/tst-reflect/runtime"
   },
   "devDependencies": {
     "@types/jest": "^27.5.0",
+    "@types/nested-error-stacks": "^2.1.0",
     "@types/node": "^17.0.31",
     "@typescript-eslint/eslint-plugin": "^5.22.0",
     "@typescript-eslint/parser": "^5.22.0",

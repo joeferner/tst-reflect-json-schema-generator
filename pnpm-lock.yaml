@@ -3,12 +3,14 @@ lockfileVersion: 5.4
 specifiers:
   '@types/jest': ^27.5.0
   '@types/json-schema': ^7.0.11
+  '@types/nested-error-stacks': ^2.1.0
   '@types/node': ^17.0.31
   '@typescript-eslint/eslint-plugin': ^5.22.0
   '@typescript-eslint/parser': ^5.22.0
   eslint: ^8.14.0
   husky: ^7.0.4
   jest: ^28.1.0
+  nested-error-stacks: ^2.1.1
   nodemon: ^2.0.16
   prettier: ^2.6.2
   ts-jest: ^28.0.1
@@ -20,10 +22,12 @@ specifiers:
 
 dependencies:
   '@types/json-schema': 7.0.11
+  nested-error-stacks: 2.1.1
   tst-reflect: link:../zzzexternal/tst-reflect/runtime
 
 devDependencies:
   '@types/jest': 27.5.0
+  '@types/nested-error-stacks': 2.1.0
   '@types/node': 17.0.31
   '@typescript-eslint/eslint-plugin': 5.22.0_lnjlwhtxjffjmj5o7dnwvwyqxq
   '@typescript-eslint/parser': 5.22.0_t725usgvqspm5woeqpaxbfp2qu
@@ -790,6 +794,10 @@ packages:
 
   /@types/json-schema/7.0.11:
     resolution: {integrity: sha512-wOuvG1SN4Us4rez+tylwwwCV1psiNVOkJeM3AUWUNWg/jDQY2+HE/444y5gc+jBmRqASOm2Oeh5c1axHobwRKQ==}
+
+  /@types/nested-error-stacks/2.1.0:
+    resolution: {integrity: sha512-7+la7jn6iA603lBgyASoaW5Nk/R5G3+hkJ4Y0gtc9VYHlcixvm/YBV2KV92dTBpeCQJYjpN2owb5jVuKCqxOaA==}
+    dev: true
 
   /@types/node/17.0.31:
     resolution: {integrity: sha512-AR0x5HbXGqkEx9CadRH3EBYx/VkiUgZIhP4wvPn/+5KIsgpNoyFaRlVe0Zlx9gRtg8fA06a9tskE2MSN7TcG4Q==}
@@ -2680,6 +2688,10 @@ packages:
   /natural-compare/1.4.0:
     resolution: {integrity: sha1-Sr6/7tdUHywnrPspvbvRXI1bpPc=}
     dev: true
+
+  /nested-error-stacks/2.1.1:
+    resolution: {integrity: sha512-9iN1ka/9zmX1ZvLV9ewJYEk9h7RyRRtqdK0woXcqohu8EWIerfPUjYJPg0ULy0UqP7cslmdGc8xKDJcojlKiaw==}
+    dev: false
 
   /node-int64/0.4.0:
     resolution: {integrity: sha1-h6kGXNs1XTGC2PlM4RGIuCXGijs=}

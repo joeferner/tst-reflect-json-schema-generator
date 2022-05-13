@@ -1,8 +1,10 @@
 import {
   JSONSchema7,
   JSONSchema7Definition,
+  JSONSchema7Type,
   JSONSchema7TypeName,
 } from "json-schema";
+import NestedError from "nested-error-stacks";
 import { Property, Type, TypeKind } from "tst-reflect";
 import ts from "typescript";
 
@@ -22,20 +24,22 @@ function createDefinitionForType(
   genericArguments: ReadonlyArray<Type> | undefined,
   definitions: Record<string, JSONSchema7Definition>
 ): JSONSchema7 {
-  if (type.fullName === "String" || type.fullName === "string") {
-    const def: JSONSchema7 = { type: "string" };
-    if (type.literalValue) {
+  if (
+    type.fullName === "String" ||
+    type.fullName === "string" ||
+    type.fullName === "Number" ||
+    type.fullName === "number" ||
+    type.fullName === "Boolean" ||
+    type.fullName === "boolean" ||
+    type.kind === TypeKind.LiteralType
+  ) {
+    const def: JSONSchema7 = {
+      type: getTypeNameFromType(type),
+    };
+    if (type.literalValue !== undefined) {
       def.const = type.literalValue;
     }
     return def;
-  }
-
-  if (type.fullName === "Number") {
-    return { type: "number" };
-  }
-
-  if (type.fullName === "Boolean") {
-    return { type: "boolean" };
   }
 
   if (
@@ -53,14 +57,14 @@ function createDefinitionForType(
     throw new Error("unhandled type");
   }
 
-  const ref: JSONSchema7 = {
-    $ref: `#/definitions/${encodeURIComponent(
-      getTypeName(type, genericArguments)
-    )}`,
-  };
-
-  const typeName = getTypeName(type, genericArguments);
+  const ref: JSONSchema7 = createRef(type, genericArguments);
+  const typeName = createTypeName(type, genericArguments);
   if (definitions[typeName]) {
+    return ref;
+  }
+
+  if (type.kind === TypeKind.Enum) {
+    definitions[typeName] = createDefinitionForEnum(type);
     return ref;
   }
 
@@ -98,6 +102,40 @@ function createDefinitionForType(
   return ref;
 }
 
+function createRef(
+  type: Type,
+  genericArguments: readonly Type[] | undefined
+): JSONSchema7 {
+  return {
+    $ref: `#/definitions/${encodeURIComponent(
+      createTypeName(type, genericArguments)
+    )}`,
+  };
+}
+
+function createDefinitionForEnum(type: Type): JSONSchema7Definition {
+  let enumValueType: JSONSchema7TypeName | JSONSchema7TypeName[] | undefined;
+  const enumValues: JSONSchema7Type[] = type.types.map((enumValue) => {
+    const vt = getJsonSchemaTypeNameFromLiteralValue(enumValue.literalValue);
+    if (enumValueType === undefined) {
+      enumValueType = vt;
+    } else if (enumValueType !== vt) {
+      if (Array.isArray(enumValueType)) {
+        if (!enumValueType.includes(vt)) {
+          enumValueType.push(vt);
+        }
+      } else {
+        enumValueType = [enumValueType, vt];
+      }
+    }
+    return enumValue.literalValue;
+  });
+  return {
+    enum: enumValues,
+    type: enumValueType,
+  };
+}
+
 function updateProperties(
   type: Type,
   genericArguments: ReadonlyArray<Type> | undefined,
@@ -109,6 +147,10 @@ function updateProperties(
     try {
       if (def.properties![property.name]) {
         continue;
+      }
+
+      if (!property.type) {
+        throw new Error(`missing type for property: ${property.name}`);
       }
 
       if (property.name === ts.InternalSymbolName.Index) {
@@ -136,7 +178,10 @@ function updateProperties(
         def.required!.push(property.name);
       }
     } catch (err) {
-      throw new Error(`failed on property "${property.name}": ${err}`);
+      throw new NestedError(
+        `failed on property "${property.name}"`,
+        err as Error
+      );
     }
   }
 }
@@ -175,7 +220,10 @@ function comparePropertyNames(a: Property, b: Property): number {
   return a.name > b.name ? 1 : -1;
 }
 
-function getTypeName(type: Type, genericArguments?: readonly Type[]): string {
+function createTypeName(
+  type: Type,
+  genericArguments?: readonly Type[]
+): string {
   let name = type.name;
   if (name === "Number" || name === "String" || name === "Boolean") {
     name = name.toLocaleLowerCase();
@@ -183,7 +231,7 @@ function getTypeName(type: Type, genericArguments?: readonly Type[]): string {
 
   if (genericArguments) {
     name += "<";
-    name += genericArguments.map((t) => getTypeName(t));
+    name += genericArguments.map((t) => createTypeName(t));
     name += ">";
   }
   return name;
@@ -216,4 +264,34 @@ function resolveType(
     return genericArgument;
   }
   return type;
+}
+
+function getJsonSchemaTypeNameFromLiteralValue(
+  value: any
+): JSONSchema7TypeName {
+  if (typeof value === "number") {
+    return "number";
+  }
+  if (typeof value === "string") {
+    return "string";
+  }
+  throw new Error(
+    `could not get type name from literal value: ${value} (type: ${typeof value})`
+  );
+}
+
+function getTypeNameFromType(
+  type: Type
+): JSONSchema7TypeName | JSONSchema7TypeName[] | undefined {
+  if (type.kind === TypeKind.LiteralType) {
+    return getJsonSchemaTypeNameFromLiteralValue(type.literalValue);
+  } else if (type.fullName === "String" || type.fullName === "string") {
+    return "string";
+  } else if (type.fullName === "Number" || type.fullName === "number") {
+    return "number";
+  } else if (type.fullName === "Boolean" || type.fullName === "boolean") {
+    return "boolean";
+  } else {
+    throw new Error(`unhandled type: ${type.fullName}`);
+  }
 }
