@@ -1,0 +1,25 @@
+{
+  "$ref": "#/definitions/MyObject",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "MyObject": {
+      "examples": [
+        { "nested": "hello" }
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "nested": {
+          "examples": [
+            "Hello world",
+            "This string rocks"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "nested"
+      ],
+      "type": "object"
+    }
+  }
+}

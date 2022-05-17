@@ -49,6 +49,7 @@ function createDefinitionForType(
     type.fullName === "boolean" ||
     type.kind === TypeKind.LiteralType
   ) {
+    debugger;
     const def: JSONSchema7 = {
       type: getTypeNameFromType(type),
     };

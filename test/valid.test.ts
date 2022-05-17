@@ -5,6 +5,7 @@ import { MyObject as AnnotationCustomMyObject } from "./valid/annotation-custom/
 import { MyObject as AnnotationDeprecatedMyObject } from "./valid/annotation-deprecated/main";
 import { MyObject as AnnotationDescriptionOverrideMyObject } from "./valid/annotation-description-override/main";
 import { MyObject as AnnotationEmptyMyObject } from "./valid/annotation-empty/main";
+import { MyObject as AnnotationExampleMyObject } from "./valid/annotation-example/main";
 import { MyObject as InterfaceSingleMyObject } from "./valid/interface-single/main";
 import { MyObject as InterfaceMultiMyObject } from "./valid/interface-multi/main";
 import { MyObject as TypeExtendMyObject } from "./valid/type-extend/main";
@@ -74,6 +75,13 @@ describe("valid", () => {
       {
         extraTags: ["customEmptyAnnotation"],
       }
+    );
+  });
+
+  test("annotation-example", () => {
+    assertValidSchema(
+      "valid/annotation-example",
+      getType<AnnotationExampleMyObject>()
     );
   });
 

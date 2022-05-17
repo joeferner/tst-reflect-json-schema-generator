@@ -41,6 +41,7 @@ const JSON_TAGS = new Set<string>([
   "propertyNames",
   "contains",
   "const",
+  "example",
   "examples",
 
   "default",
@@ -72,16 +73,38 @@ export function updateWithJsDocs(
         if (!t || !t.tagName) {
           return;
         }
-        (def as any)[getName(t)] = getValue(t, options);
+        const name = getName(t);
+        if (name === "example") {
+          try {
+            const value = json5.parse(t.comment || "");
+            if (def.examples) {
+              if (Array.isArray(def.examples)) {
+                def.examples.push(value);
+              } else {
+                def.examples = [def.examples, value];
+              }
+            } else {
+              def.examples = [value];
+            }
+          } catch (err) {
+            // ignore bad examples
+          }
+        } else {
+          (def as any)[name] = getValue(t, options);
+        }
       });
 
     if (!def.description) {
       const description = type.jsDocs
         .flatMap((d) => d.comment)
-        .join("\n")
+        .join(" ")
         ?.trim();
       if (description && description.length > 0) {
-        def.description = description;
+        def.description = description
+          .replace(/\r/g, "")
+          .replace(/(?<=[^\n])\n(?=[^\n*-])/g, " ")
+          // strip newlines
+          .replace(/^\s+|\s+$/g, "");
       }
     }
   }
