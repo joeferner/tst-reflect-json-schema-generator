@@ -10,7 +10,7 @@ import ts from "typescript";
 
 export function createJsonSchema(type: Type): JSONSchema7 {
   const definitions: Record<string, JSONSchema7Definition> = {};
-  createDefinitionForType(type, undefined, definitions);
+  createDefinitionForType(type, definitions, {});
 
   return {
     $ref: `#/definitions/${encodeURIComponent(type.name)}`,
@@ -21,9 +21,15 @@ export function createJsonSchema(type: Type): JSONSchema7 {
 
 function createDefinitionForType(
   type: Type,
-  genericArguments: ReadonlyArray<Type> | undefined,
-  definitions: Record<string, JSONSchema7Definition>
+  definitions: Record<string, JSONSchema7Definition>,
+  genericTypes: Record<string, Type>
 ): JSONSchema7 {
+  type = resolveType(type, genericTypes);
+
+  if (type.isArray()) {
+    return createDefinitionForArray(type, definitions, genericTypes);
+  }
+
   if (
     type.fullName === "String" ||
     type.fullName === "string" ||
@@ -42,23 +48,19 @@ function createDefinitionForType(
     return def;
   }
 
-  if (
-    type.kind == TypeKind.Container &&
-    type.fullName === "optional" &&
-    type.baseType?.fullName === "Object" &&
-    type.isUnion()
-  ) {
+  // optional type (a?: string)
+  if (type.kind == TypeKind.Container && type.isUnion()) {
     const types = type.types.filter((t) => t.fullName !== "undefined");
 
     const onlyType = types[0];
     if (types.length === 1 && onlyType) {
-      return createDefinitionForType(onlyType, genericArguments, definitions);
+      return createDefinitionForType(onlyType, definitions, genericTypes);
     }
     throw new Error("unhandled type");
   }
 
-  const ref: JSONSchema7 = createRef(type, genericArguments);
-  const typeName = createTypeName(type, genericArguments);
+  const ref: JSONSchema7 = createRef(type);
+  const typeName = createTypeName(type);
   if (definitions[typeName]) {
     return ref;
   }
@@ -82,12 +84,8 @@ function createDefinitionForType(
     def.$comment = comment;
   }
 
-  for (
-    let t: Type | undefined = type, tGenericArguments = genericArguments;
-    t;
-    tGenericArguments = t?.baseTypeGenericArguments, t = t.baseType
-  ) {
-    updateProperties(t, tGenericArguments, def, definitions);
+  for (let t: Type | undefined = type; t; t = t.baseType) {
+    updateProperties(t, def, definitions, genericTypes);
   }
 
   if (def.required?.length === 0) {
@@ -102,14 +100,23 @@ function createDefinitionForType(
   return ref;
 }
 
-function createRef(
-  type: Type,
-  genericArguments: readonly Type[] | undefined
-): JSONSchema7 {
+function createRef(type: Type): JSONSchema7 {
   return {
-    $ref: `#/definitions/${encodeURIComponent(
-      createTypeName(type, genericArguments)
-    )}`,
+    $ref: `#/definitions/${encodeURIComponent(createTypeName(type))}`,
+  };
+}
+
+function createDefinitionForArray(
+  type: Type,
+  definitions: Record<string, JSONSchema7Definition>,
+  genericTypes: Record<string, Type>
+): JSONSchema7 {
+  const typeArg = type.getTypeArguments()[0];
+  return {
+    type: "array",
+    items: typeArg
+      ? createDefinitionForType(typeArg, definitions, genericTypes)
+      : { type: "object" },
   };
 }
 
@@ -137,12 +144,26 @@ function createDefinitionForEnum(type: Type): JSONSchema7Definition {
 }
 
 function updateProperties(
-  type: Type,
-  genericArguments: ReadonlyArray<Type> | undefined,
+  parentType: Type,
   def: JSONSchema7,
-  definitions: Record<string, JSONSchema7Definition>
+  definitions: Record<string, JSONSchema7Definition>,
+  genericTypes: Record<string, Type>
 ): void {
-  const typeProperties = [...type.getProperties()].sort(comparePropertyNames);
+  const isPartial = parentType.fullName === "Partial";
+  if (isPartial) {
+    const genericArguments = parentType.getTypeArguments();
+    const ga = genericArguments?.[0];
+    if (genericArguments?.length !== 1 || ga === undefined) {
+      throw new Error("invalid Partial, expected 1 generic argument");
+    }
+    parentType = ga;
+  }
+
+  genericTypes = { ...genericTypes, ...getGenericTypeMap(parentType) };
+
+  const typeProperties = [...parentType.getProperties()].sort(
+    comparePropertyNames
+  );
   for (const property of typeProperties) {
     try {
       if (def.properties![property.name]) {
@@ -156,15 +177,16 @@ function updateProperties(
       if (property.name === ts.InternalSymbolName.Index) {
         def.additionalProperties = createDefinitionForTypes(
           property.type.types,
-          definitions
+          definitions,
+          genericTypes
         );
         continue;
       }
 
       const p = createDefinitionForType(
-        resolveType(property.type, type.getTypeParameters(), genericArguments),
-        property.genericArguments,
-        definitions
+        resolveType(property.type, genericTypes),
+        definitions,
+        genericTypes
       );
 
       const comment = getComment(property);
@@ -188,10 +210,11 @@ function updateProperties(
 
 function createDefinitionForTypes(
   types: readonly Type[],
-  definitions: Record<string, JSONSchema7Definition>
+  definitions: Record<string, JSONSchema7Definition>,
+  genericTypes: Record<string, Type>
 ): JSONSchema7 {
   const typesDefinitions = types.map((t) =>
-    createDefinitionForType(t, undefined, definitions)
+    createDefinitionForType(t, definitions, genericTypes)
   );
   if (typesDefinitions.every(isSimpleType)) {
     return { type: typesDefinitions.flatMap((t) => t.type) };
@@ -220,16 +243,14 @@ function comparePropertyNames(a: Property, b: Property): number {
   return a.name > b.name ? 1 : -1;
 }
 
-function createTypeName(
-  type: Type,
-  genericArguments?: readonly Type[]
-): string {
+function createTypeName(type: Type): string {
   let name = type.name;
   if (name === "Number" || name === "String" || name === "Boolean") {
     name = name.toLocaleLowerCase();
   }
 
-  if (genericArguments) {
+  const genericArguments = type.getTypeArguments();
+  if (genericArguments?.length > 0) {
     name += "<";
     name += genericArguments.map((t) => createTypeName(t));
     name += ">";
@@ -237,31 +258,17 @@ function createTypeName(
   return name;
 }
 
-function resolveType(
-  type: Type,
-  typeParameters: readonly Type[],
-  genericArguments: readonly Type[] | undefined
-): Type {
+function resolveType(type: Type, genericTypes: Record<string, Type>): Type {
   if (type.kind === TypeKind.TypeParameter) {
-    const typeParameterIndex = typeParameters.findIndex(
-      (t) => type.name === t.name
-    );
-    if (typeParameterIndex < 0) {
+    const genericType = genericTypes[type.name];
+    if (!genericType) {
       throw new Error(
-        `Could not find type parameter ${type.name} from [${typeParameters.map(
-          (tp) => tp.name
-        )}]`
+        `Could not find type parameter ${type.name} from [${Object.keys(
+          genericTypes
+        ).join(",")}]`
       );
     }
-    const genericArgument = genericArguments?.[typeParameterIndex];
-    if (!genericArgument) {
-      throw new Error(
-        `Could not find type argument ${
-          type.name
-        } from [${genericArguments?.map((tp) => tp.name)}]`
-      );
-    }
-    return genericArgument;
+    return genericType;
   }
   return type;
 }
@@ -294,4 +301,22 @@ function getTypeNameFromType(
   } else {
     throw new Error(`unhandled type: ${type.fullName}`);
   }
+}
+
+function getGenericTypeMap(type: Type): Record<string, Type> {
+  const typeArguments = type.getTypeArguments();
+  const typeParameters = type.getTypeParameters();
+  if (!typeArguments || !typeParameters) {
+    return {};
+  }
+  const results: Record<string, Type> = {};
+  for (let i = 0; i < typeArguments.length; i++) {
+    const typeArgument = typeArguments[i];
+    const typeParameter = typeParameters[i];
+    if (!typeArgument || !typeParameter) {
+      continue;
+    }
+    results[typeParameter.name] = typeArgument;
+  }
+  return results;
 }
