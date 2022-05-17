@@ -23,6 +23,7 @@
   "license": "MIT",
   "dependencies": {
     "@types/json-schema": "^7.0.11",
+    "json5": "^2.2.1",
     "nested-error-stacks": "^2.1.1",
     "tst-reflect": "../zzzexternal/tst-reflect/runtime"
   },

@@ -1,8 +1,9 @@
 import { getType } from "tst-reflect";
 import { assertValidSchema } from "./utils";
+import { MyObject as AnnotationCommentMyObject } from "./valid/annotation-comment/main";
+import { MyObject as AnnotationCustomMyObject } from "./valid/annotation-custom/main";
 import { MyObject as InterfaceSingleMyObject } from "./valid/interface-single/main";
 import { MyObject as InterfaceMultiMyObject } from "./valid/interface-multi/main";
-import { MyObject as AnnotationCommentMyObject } from "./valid/annotation-comment/main";
 import { MyObject as TypeExtendMyObject } from "./valid/type-extend/main";
 import { MyObject as ClassInheritanceMyObject } from "./valid/class-inheritance/main";
 import { MyObject as ClassGenericsMyObject } from "./valid/class-generics/main";
@@ -23,6 +24,23 @@ describe("valid", () => {
     assertValidSchema(
       "valid/annotation-comment",
       getType<AnnotationCommentMyObject>()
+    );
+  });
+
+  test("annotation-custom", () => {
+    assertValidSchema(
+      "valid/annotation-custom",
+      getType<AnnotationCustomMyObject>(),
+      {
+        extraTags: [
+          "customBooleanProperty",
+          "customNumberProperty",
+          "customStringProperty",
+          "customComplexProperty",
+          "customMultilineProperty",
+          "customUnquotedProperty",
+        ],
+      }
     );
   });
 

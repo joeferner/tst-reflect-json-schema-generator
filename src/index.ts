@@ -7,10 +7,19 @@ import {
 import NestedError from "nested-error-stacks";
 import { Property, Type, TypeKind } from "tst-reflect";
 import ts from "typescript";
+import { updateWithJsDocs } from "./updateWithJsDocs";
 
-export function createJsonSchema(type: Type): JSONSchema7 {
+export interface Options {
+  extraTags?: string[];
+}
+
+export const DEFAULT_OPTIONS: Options = {};
+
+export function createJsonSchema(type: Type, options?: Options): JSONSchema7 {
+  options = { ...DEFAULT_OPTIONS, ...options };
+
   const definitions: Record<string, JSONSchema7Definition> = {};
-  createDefinitionForType(type, definitions, {});
+  createDefinitionForType(type, definitions, {}, options);
 
   return {
     $ref: `#/definitions/${encodeURIComponent(type.name)}`,
@@ -22,12 +31,13 @@ export function createJsonSchema(type: Type): JSONSchema7 {
 function createDefinitionForType(
   type: Type,
   definitions: Record<string, JSONSchema7Definition>,
-  genericTypes: Record<string, Type>
+  genericTypes: Record<string, Type>,
+  options: Options
 ): JSONSchema7 {
   type = resolveType(type, genericTypes);
 
   if (type.isArray()) {
-    return createDefinitionForArray(type, definitions, genericTypes);
+    return createDefinitionForArray(type, definitions, genericTypes, options);
   }
 
   if (
@@ -54,7 +64,12 @@ function createDefinitionForType(
 
     const onlyType = types[0];
     if (types.length === 1 && onlyType) {
-      return createDefinitionForType(onlyType, definitions, genericTypes);
+      return createDefinitionForType(
+        onlyType,
+        definitions,
+        genericTypes,
+        options
+      );
     }
     throw new Error("unhandled type");
   }
@@ -79,13 +94,10 @@ function createDefinitionForType(
     required,
   };
 
-  const comment = getComment(type);
-  if (comment) {
-    def.$comment = comment;
-  }
+  updateWithJsDocs(type, def, options);
 
   for (let t: Type | undefined = type; t; t = t.baseType) {
-    updateProperties(t, def, definitions, genericTypes);
+    updateProperties(t, def, definitions, genericTypes, options);
   }
 
   if (def.required?.length === 0) {
@@ -109,13 +121,14 @@ function createRef(type: Type): JSONSchema7 {
 function createDefinitionForArray(
   type: Type,
   definitions: Record<string, JSONSchema7Definition>,
-  genericTypes: Record<string, Type>
+  genericTypes: Record<string, Type>,
+  options: Options
 ): JSONSchema7 {
   const typeArg = type.getTypeArguments()[0];
   return {
     type: "array",
     items: typeArg
-      ? createDefinitionForType(typeArg, definitions, genericTypes)
+      ? createDefinitionForType(typeArg, definitions, genericTypes, options)
       : { type: "object" },
   };
 }
@@ -147,7 +160,8 @@ function updateProperties(
   parentType: Type,
   def: JSONSchema7,
   definitions: Record<string, JSONSchema7Definition>,
-  genericTypes: Record<string, Type>
+  genericTypes: Record<string, Type>,
+  options: Options
 ): void {
   const isPartial = parentType.fullName === "Partial";
   if (isPartial) {
@@ -178,7 +192,8 @@ function updateProperties(
         def.additionalProperties = createDefinitionForTypes(
           property.type.types,
           definitions,
-          genericTypes
+          genericTypes,
+          options
         );
         continue;
       }
@@ -186,13 +201,11 @@ function updateProperties(
       const p = createDefinitionForType(
         resolveType(property.type, genericTypes),
         definitions,
-        genericTypes
+        genericTypes,
+        options
       );
 
-      const comment = getComment(property);
-      if (comment) {
-        p.$comment = comment;
-      }
+      updateWithJsDocs(property, p, options);
 
       def.properties![property.name] = p;
 
@@ -211,10 +224,11 @@ function updateProperties(
 function createDefinitionForTypes(
   types: readonly Type[],
   definitions: Record<string, JSONSchema7Definition>,
-  genericTypes: Record<string, Type>
+  genericTypes: Record<string, Type>,
+  options: Options
 ): JSONSchema7 {
   const typesDefinitions = types.map((t) =>
-    createDefinitionForType(t, definitions, genericTypes)
+    createDefinitionForType(t, definitions, genericTypes, options)
   );
   if (typesDefinitions.every(isSimpleType)) {
     return { type: typesDefinitions.flatMap((t) => t.type) };
@@ -226,17 +240,6 @@ function isSimpleType(t: JSONSchema7): t is {
   type: JSONSchema7TypeName | JSONSchema7TypeName[];
 } {
   return Object.keys(t).length === 1 && !!t.type;
-}
-
-function getComment(type: Type | Property): string | undefined {
-  if (type.jsDocs && type.jsDocs.length > 0) {
-    return type.jsDocs
-      .flatMap((d) => d.tags)
-      .filter((t) => t?.comment && t?.tagName === "comment")
-      .map((t) => t?.comment)
-      .join("\n");
-  }
-  return undefined;
 }
 
 function comparePropertyNames(a: Property, b: Property): number {

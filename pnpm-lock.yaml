@@ -10,6 +10,7 @@ specifiers:
   eslint: ^8.14.0
   husky: ^7.0.4
   jest: ^28.1.0
+  json5: ^2.2.1
   nested-error-stacks: ^2.1.1
   nodemon: ^2.0.16
   prettier: ^2.6.2
@@ -22,6 +23,7 @@ specifiers:
 
 dependencies:
   '@types/json-schema': 7.0.11
+  json5: 2.2.1
   nested-error-stacks: 2.1.1
   tst-reflect: link:../zzzexternal/tst-reflect/runtime
 
@@ -2558,7 +2560,6 @@ packages:
     resolution: {integrity: sha512-1hqLFMSrGHRHxav9q9gNjJ5EXznIxGVO09xQRrwplcS8qs28pZ8s8hupZAmqDwZUmVZ2Qb2jnyPOWcDH8m8dlA==}
     engines: {node: '>=6'}
     hasBin: true
-    dev: true
 
   /keyv/3.1.0:
     resolution: {integrity: sha512-9ykJ/46SN/9KPM/sichzQ7OvXyGDYKGTaDlKMGCAlg2UK8KRy4jb0d8sFc+0Tt0YYnThq8X2RZgCg74RPxgcVA==}
