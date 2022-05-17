@@ -64,16 +64,26 @@ export function updateWithJsDocs(
   type: Type | Property,
   def: JSONSchema7,
   options: UpdateWithJsDocsOptions
-) {
+): void {
   if (type.jsDocs && type.jsDocs.length > 0) {
-    return type.jsDocs
+    type.jsDocs
       .flatMap((d) => d.tags)
       .forEach((t: JsDocTag | undefined) => {
-        if (!t || !t.tagName || !t.comment) {
+        if (!t || !t.tagName) {
           return;
         }
         (def as any)[getName(t)] = getValue(t, options);
       });
+
+    if (!def.description) {
+      const description = type.jsDocs
+        .flatMap((d) => d.comment)
+        .join("\n")
+        ?.trim();
+      if (description && description.length > 0) {
+        def.description = description;
+      }
+    }
   }
 }
 

@@ -2,6 +2,8 @@ import { getType } from "tst-reflect";
 import { assertValidSchema } from "./utils";
 import { MyObject as AnnotationCommentMyObject } from "./valid/annotation-comment/main";
 import { MyObject as AnnotationCustomMyObject } from "./valid/annotation-custom/main";
+import { MyObject as AnnotationDeprecatedMyObject } from "./valid/annotation-deprecated/main";
+import { MyObject as AnnotationDescriptionOverrideMyObject } from "./valid/annotation-description-override/main";
 import { MyObject as InterfaceSingleMyObject } from "./valid/interface-single/main";
 import { MyObject as InterfaceMultiMyObject } from "./valid/interface-multi/main";
 import { MyObject as TypeExtendMyObject } from "./valid/type-extend/main";
@@ -40,6 +42,26 @@ describe("valid", () => {
           "customMultilineProperty",
           "customUnquotedProperty",
         ],
+      }
+    );
+  });
+
+  test("annotation-deprecated", () => {
+    assertValidSchema(
+      "valid/annotation-deprecated",
+      getType<AnnotationDeprecatedMyObject>(),
+      {
+        extraTags: ["deprecationMessage"],
+      }
+    );
+  });
+
+  test("annotation-description-override", () => {
+    assertValidSchema(
+      "valid/annotation-description-override",
+      getType<AnnotationDescriptionOverrideMyObject>(),
+      {
+        extraTags: ["markdownDescription"],
       }
     );
   });

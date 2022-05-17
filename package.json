@@ -12,7 +12,7 @@
     "lint-staged": "lint-staged",
     "pre-commit": "npm run format && npm run lint-staged && npm run build && npm run test",
     "test": "jest test --verbose",
-    "test:watch": "jest test --watch --verbose"
+    "test:watch": "jest test --watch --verbose --no-cache"
   },
   "keywords": [
     "tst-reflect",
