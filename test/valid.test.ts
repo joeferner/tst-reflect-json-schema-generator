@@ -6,6 +6,7 @@ import { MyObject as AnnotationDeprecatedMyObject } from "./valid/annotation-dep
 import { MyObject as AnnotationDescriptionOverrideMyObject } from "./valid/annotation-description-override/main";
 import { MyObject as AnnotationEmptyMyObject } from "./valid/annotation-empty/main";
 import { MyObject as AnnotationExampleMyObject } from "./valid/annotation-example/main";
+import { MyObject as AnnotationIdMyObject } from "./valid/annotation-id/main";
 import { MyObject as InterfaceSingleMyObject } from "./valid/interface-single/main";
 import { MyObject as InterfaceMultiMyObject } from "./valid/interface-multi/main";
 import { MyObject as TypeExtendMyObject } from "./valid/type-extend/main";
@@ -83,6 +84,12 @@ describe("valid", () => {
       "valid/annotation-example",
       getType<AnnotationExampleMyObject>()
     );
+  });
+
+  test("annotation-id", () => {
+    assertValidSchema("valid/annotation-id", getType<AnnotationIdMyObject>(), {
+      schemaId: "Test",
+    });
   });
 
   test("class-generics", () => {

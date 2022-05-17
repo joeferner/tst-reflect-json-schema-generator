@@ -11,6 +11,7 @@ import { updateWithJsDocs } from "./updateWithJsDocs";
 
 export interface Options {
   extraTags?: string[];
+  schemaId?: string;
 }
 
 export const DEFAULT_OPTIONS: Options = {};
@@ -21,11 +22,15 @@ export function createJsonSchema(type: Type, options?: Options): JSONSchema7 {
   const definitions: Record<string, JSONSchema7Definition> = {};
   createDefinitionForType(type, definitions, {}, options);
 
-  return {
+  const result: JSONSchema7 = {
     $ref: `#/definitions/${encodeURIComponent(type.name)}`,
     $schema: "http://json-schema.org/draft-07/schema#",
     definitions,
   };
+  if (options.schemaId) {
+    result.$id = options.schemaId;
+  }
+  return result;
 }
 
 function createDefinitionForType(
@@ -49,7 +54,6 @@ function createDefinitionForType(
     type.fullName === "boolean" ||
     type.kind === TypeKind.LiteralType
   ) {
-    debugger;
     const def: JSONSchema7 = {
       type: getTypeNameFromType(type),
     };

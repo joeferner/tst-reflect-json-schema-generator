@@ -73,6 +73,7 @@ export function updateWithJsDocs(
         if (!t || !t.tagName) {
           return;
         }
+
         const name = getName(t);
         if (name === "example") {
           try {
