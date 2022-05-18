@@ -5,14 +5,14 @@
   "main": "dist/index.js",
   "types": "src/index.ts",
   "scripts": {
-    "build": "ttsc",
-    "build:watch": "nodemon --watch src --ext ts --exec ttsc",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint --fix --ext .ts .",
     "lint-staged": "lint-staged",
     "pre-commit": "npm run format && npm run lint-staged && npm run build && npm run test",
     "test": "jest test --verbose",
-    "test:watch": "jest test --watch --verbose --no-cache"
+    "test:watch": "nodemon --watch src --watch test --ignore test/dist --ext ts --exec 'ttsc -p ./test/tsconfig.json && jest test/dist --verbose --no-cache'"
   },
   "keywords": [
     "tst-reflect",

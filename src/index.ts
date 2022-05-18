@@ -2,7 +2,7 @@ import {
   JSONSchema7,
   JSONSchema7Definition,
   JSONSchema7Type,
-  JSONSchema7TypeName
+  JSONSchema7TypeName,
 } from "json-schema";
 import NestedError from "nested-error-stacks";
 import { JsDoc, JsDocTag, Property, Type, TypeKind } from "tst-reflect";
@@ -52,6 +52,7 @@ function createDefinitionForType(
     type.fullName === "number" ||
     type.fullName === "Boolean" ||
     type.fullName === "boolean" ||
+    type.fullName === "undefined" ||
     type.kind === TypeKind.LiteralType
   ) {
     const def: JSONSchema7 = {
@@ -243,16 +244,19 @@ function createDefinitionForTypes(
   const typesDefinitions = types.map((t) =>
     createDefinitionForType(t, definitions, genericTypes, options)
   );
+
+  const isSimpleType = (
+    t: JSONSchema7
+  ): t is {
+    type: JSONSchema7TypeName | JSONSchema7TypeName[];
+  } => {
+    return Object.keys(t).length === 1 && !!t.type;
+  };
+
   if (typesDefinitions.every(isSimpleType)) {
     return { type: typesDefinitions.flatMap((t) => t.type) };
   }
   throw new Error("unhandled, multiple complex types");
-}
-
-function isSimpleType(t: JSONSchema7): t is {
-  type: JSONSchema7TypeName | JSONSchema7TypeName[];
-} {
-  return Object.keys(t).length === 1 && !!t.type;
 }
 
 function comparePropertyNames(a: Property, b: Property): number {
@@ -314,6 +318,8 @@ function getTypeNameFromType(
     return "number";
   } else if (type.fullName === "Boolean" || type.fullName === "boolean") {
     return "boolean";
+  } else if (type.fullName === "undefined") {
+    return "null";
   } else {
     throw new Error(`unhandled type: ${type.fullName}`);
   }

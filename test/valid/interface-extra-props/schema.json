@@ -5,6 +5,7 @@
     "MyObject": {
       "additionalProperties": {
         "type": [
+          "null",
           "string",
           "number"
         ]

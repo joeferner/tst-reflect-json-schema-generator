@@ -9,7 +9,7 @@ export function assertValidSchema(
   options?: Options
 ): void {
   const expected = JSON.parse(
-    fs.readFileSync(path.join(__dirname, schemaPath, "schema.json"), "utf-8")
+    fs.readFileSync(path.join(__dirname, '..', '..', schemaPath, "schema.json"), "utf-8")
   );
   const found = createJsonSchema(type, options);
   expect(found).toEqual(expected);
