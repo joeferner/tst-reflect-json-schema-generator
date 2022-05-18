@@ -2,10 +2,10 @@ import {
   JSONSchema7,
   JSONSchema7Definition,
   JSONSchema7Type,
-  JSONSchema7TypeName,
+  JSONSchema7TypeName
 } from "json-schema";
 import NestedError from "nested-error-stacks";
-import { Property, Type, TypeKind } from "tst-reflect";
+import { JsDoc, JsDocTag, Property, Type, TypeKind } from "tst-reflect";
 import ts from "typescript";
 import { updateWithJsDocs } from "./updateWithJsDocs";
 
@@ -203,13 +203,21 @@ function updateProperties(
         continue;
       }
 
-      const p = createDefinitionForType(
-        resolveType(property.type, genericTypes),
-        definitions,
-        genericTypes,
-        options
-      );
-
+      const propertyType = resolveType(property.type, genericTypes);
+      const refTag = findTag(property.jsDocs, "ref");
+      let p: JSONSchema7;
+      if (refTag) {
+        p = {
+          $ref: refTag.comment,
+        };
+      } else {
+        p = createDefinitionForType(
+          propertyType,
+          definitions,
+          genericTypes,
+          options
+        );
+      }
       updateWithJsDocs(property, p, options);
 
       def.properties![property.name] = p;
@@ -327,4 +335,18 @@ function getGenericTypeMap(type: Type): Record<string, Type> {
     results[typeParameter.name] = typeArgument;
   }
   return results;
+}
+
+function findTag(
+  jsDocs: readonly JsDoc[] | undefined,
+  tagName: string
+): JsDocTag | undefined {
+  for (const jsDoc of jsDocs || []) {
+    for (const tag of jsDoc.tags || []) {
+      if (tag.tagName === tagName) {
+        return tag;
+      }
+    }
+  }
+  return undefined;
 }

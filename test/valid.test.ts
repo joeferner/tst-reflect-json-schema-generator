@@ -7,6 +7,8 @@ import { MyObject as AnnotationDescriptionOverrideMyObject } from "./valid/annot
 import { MyObject as AnnotationEmptyMyObject } from "./valid/annotation-empty/main";
 import { MyObject as AnnotationExampleMyObject } from "./valid/annotation-example/main";
 import { MyObject as AnnotationIdMyObject } from "./valid/annotation-id/main";
+import { MyObject as AnnotationReadOnlyMyObject } from "./valid/annotation-readOnly/main";
+import { MyObject as AnnotationRefMyObject } from "./valid/annotation-ref/main";
 import { MyObject as InterfaceSingleMyObject } from "./valid/interface-single/main";
 import { MyObject as InterfaceMultiMyObject } from "./valid/interface-multi/main";
 import { MyObject as TypeExtendMyObject } from "./valid/type-extend/main";
@@ -90,6 +92,17 @@ describe("valid", () => {
     assertValidSchema("valid/annotation-id", getType<AnnotationIdMyObject>(), {
       schemaId: "Test",
     });
+  });
+
+  test("annotation-readOnly", () => {
+    assertValidSchema(
+      "valid/annotation-readOnly",
+      getType<AnnotationReadOnlyMyObject>()
+    );
+  });
+
+  test("annotation-ref", () => {
+    assertValidSchema("valid/annotation-ref", getType<AnnotationRefMyObject>());
   });
 
   test("class-generics", () => {
