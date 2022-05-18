@@ -45,6 +45,10 @@ function createDefinitionForType(
     return createDefinitionForArray(type, definitions, genericTypes, options);
   }
 
+  if (type.fullName === "any" || type.fullName === "unknown") {
+    return {};
+  }
+
   if (
     type.fullName === "String" ||
     type.fullName === "string" ||
