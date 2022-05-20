@@ -1,5 +1,5 @@
 import { JSONSchema7, JSONSchema7Definition } from "json-schema";
-import { Type } from "tst-reflect";
+import { Type, TypeKind } from "tst-reflect";
 import { createDefinitionForType, Options } from ".";
 import { collapseSameSchemas, isOptionalType } from "./utils";
 
@@ -20,12 +20,20 @@ export function createDefinitionForArray(
     if (itemsTypes.length !== 1) {
       throw new Error("could not get tuple type");
     }
-    return {
+
+    const def: JSONSchema7 = {
       type: "array",
       items: itemsTypes[0],
-      minItems: properties.filter((p) => !isOptionalType(p.type)).length,
-      maxItems: properties.length,
+      minItems: properties.filter(
+        (p) => !isOptionalType(p.type) && p.kind !== TypeKind.RestType
+      ).length,
     };
+
+    const hasRestTypes = properties.some((p) => p.kind === TypeKind.RestType);
+    if (!hasRestTypes) {
+      def.maxItems = properties.length;
+    }
+    return def;
   } else {
     return {
       type: "array",
