@@ -2,12 +2,14 @@ import {
   JSONSchema7,
   JSONSchema7Definition,
   JSONSchema7Type,
-  JSONSchema7TypeName,
+  JSONSchema7TypeName
 } from "json-schema";
 import NestedError from "nested-error-stacks";
-import { JsDoc, JsDocTag, Property, Type, TypeKind } from "tst-reflect";
+import { Property, Type, TypeKind } from "tst-reflect";
 import ts from "typescript";
+import { createDefinitionForArray } from "./createDefinitionForArray";
 import { updateWithJsDocs } from "./updateWithJsDocs";
+import { findTag, isOptionalType } from "./utils";
 
 export interface Options {
   extraTags?: string[];
@@ -33,7 +35,7 @@ export function createJsonSchema(type: Type, options?: Options): JSONSchema7 {
   return result;
 }
 
-function createDefinitionForType(
+export function createDefinitionForType(
   type: Type,
   definitions: Record<string, JSONSchema7Definition>,
   genericTypes: Record<string, Type>,
@@ -42,7 +44,17 @@ function createDefinitionForType(
   type = resolveType(type, genericTypes);
 
   if (type.isArray()) {
-    return createDefinitionForArray(type, definitions, genericTypes, options);
+    const def = createDefinitionForArray(
+      type,
+      definitions,
+      genericTypes,
+      options
+    );
+    if (type.name && type.getProperties().length > 0) {
+      definitions[type.name] = def;
+    } else {
+      return def;
+    }
   }
 
   if (type.fullName === "any" || type.fullName === "unknown") {
@@ -69,7 +81,7 @@ function createDefinitionForType(
   }
 
   // optional type (a?: string)
-  if (type.kind == TypeKind.Container && type.isUnion()) {
+  if (isOptionalType(type)) {
     const types = type.types.filter((t) => t.fullName !== "undefined");
 
     const onlyType = types[0];
@@ -125,21 +137,6 @@ function createDefinitionForType(
 function createRef(type: Type): JSONSchema7 {
   return {
     $ref: `#/definitions/${encodeURIComponent(createTypeName(type))}`,
-  };
-}
-
-function createDefinitionForArray(
-  type: Type,
-  definitions: Record<string, JSONSchema7Definition>,
-  genericTypes: Record<string, Type>,
-  options: Options
-): JSONSchema7 {
-  const typeArg = type.getTypeArguments()[0];
-  return {
-    type: "array",
-    items: typeArg
-      ? createDefinitionForType(typeArg, definitions, genericTypes, options)
-      : { type: "object" },
   };
 }
 
@@ -345,18 +342,4 @@ function getGenericTypeMap(type: Type): Record<string, Type> {
     results[typeParameter.name] = typeArgument;
   }
   return results;
-}
-
-function findTag(
-  jsDocs: readonly JsDoc[] | undefined,
-  tagName: string
-): JsDocTag | undefined {
-  for (const jsDoc of jsDocs || []) {
-    for (const tag of jsDoc.tags || []) {
-      if (tag.tagName === tagName) {
-        return tag;
-      }
-    }
-  }
-  return undefined;
 }
