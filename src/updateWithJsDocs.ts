@@ -1,6 +1,7 @@
 import { JSONSchema7 } from "json-schema";
-import { Property, Type, JsDocTag } from "tst-reflect";
+import { Property, Type, JsDocTag, JsDoc } from "tst-reflect";
 import json5 from "json5";
+import { findJsDocTags } from "./utils";
 
 const REQUIRES_DOLLAR = new Set<string>(["id", "comment", "ref"]);
 
@@ -62,51 +63,59 @@ export interface UpdateWithJsDocsOptions {
 }
 
 export function updateWithJsDocs(
+  parentType: Type | undefined,
   type: Type | Property,
   def: JSONSchema7,
   options: UpdateWithJsDocsOptions
 ): void {
-  if (type.jsDocs && type.jsDocs.length > 0) {
-    type.jsDocs
-      .flatMap((d) => d.tags)
-      .forEach((t: JsDocTag | undefined) => {
-        if (!t || !t.tagName) {
-          return;
-        }
-
-        const name = getName(t);
-        if (name === "example") {
-          try {
-            const value = json5.parse(t.comment || "");
-            if (def.examples) {
-              if (Array.isArray(def.examples)) {
-                def.examples.push(value);
-              } else {
-                def.examples = [def.examples, value];
-              }
-            } else {
-              def.examples = [value];
-            }
-          } catch (err) {
-            // ignore bad examples
-          }
-        } else {
-          (def as any)[name] = getValue(t, options);
-        }
-      });
-
-    if (!def.description) {
-      const description = type.jsDocs
-        .flatMap((d) => d.comment)
-        .join(" ")
-        ?.trim();
-      if (description && description.length > 0) {
-        def.description = description
-          .replace(/\r/g, "")
-          .replace(/(?<=[^\n])\n(?=[^\n*-])/g, " ")
-          // strip newlines
-          .replace(/^\s+|\s+$/g, "");
+  type.jsDocs
+    ?.flatMap((d) => d.tags)
+    ?.forEach((t: JsDocTag | undefined) => {
+      if (!t || !t.tagName) {
+        return;
       }
+
+      const name = getName(t);
+      if (name === "example") {
+        try {
+          const value = json5.parse(t.comment || "");
+          if (def.examples) {
+            if (Array.isArray(def.examples)) {
+              def.examples.push(value);
+            } else {
+              def.examples = [def.examples, value];
+            }
+          } else {
+            def.examples = [value];
+          }
+        } catch (err) {
+          // ignore bad examples
+        }
+      } else {
+        (def as any)[name] = getValue(t, options);
+      }
+    });
+
+  if (!def.description) {
+    const descriptions = type.jsDocs?.flatMap((d) => d.comment) ?? [];
+
+    for (const constructor of parentType?.getConstructors() ?? []) {
+      const tags = findJsDocTags(constructor.jsDocs, "param");
+      for (const tag of tags) {
+        if (tag.name === type.name) {
+          descriptions.push(tag.comment);
+        }
+      }
+    }
+
+    const description = descriptions.join(" ")?.trim();
+
+    if (description && description.length > 0) {
+      def.description = description
+        .replace(/\r/g, "")
+        .replace(/(?<=[^\n])\n(?=[^\n*-])/g, " ")
+        // strip newlines
+        .replace(/^\s+|\s+$/g, "");
     }
   }
 }

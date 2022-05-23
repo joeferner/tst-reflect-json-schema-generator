@@ -1,18 +1,19 @@
 import { JSONSchema7 } from "json-schema";
 import { JsDoc, JsDocTag, Type, TypeKind } from "tst-reflect";
 
-export function findTag(
+export function findJsDocTags(
   jsDocs: readonly JsDoc[] | undefined,
   tagName: string
-): JsDocTag | undefined {
+): JsDocTag[] {
+  const results: JsDocTag[] = [];
   for (const jsDoc of jsDocs || []) {
     for (const tag of jsDoc.tags || []) {
       if (tag.tagName === tagName) {
-        return tag;
+        results.push(tag);
       }
     }
   }
-  return undefined;
+  return results;
 }
 
 export function isOptionalType(type: Type): boolean {

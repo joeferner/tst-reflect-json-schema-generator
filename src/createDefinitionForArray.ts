@@ -1,6 +1,7 @@
 import { JSONSchema7, JSONSchema7Definition } from "json-schema";
 import { Type, TypeKind } from "tst-reflect";
-import { createDefinitionForType, Options } from ".";
+import { Options } from ".";
+import { createDefinitionForType } from "./createDefinitionForType";
 import { collapseSameSchemas, isOptionalType } from "./utils";
 
 export function createDefinitionForArray(
