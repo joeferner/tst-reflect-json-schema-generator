@@ -1,7 +1,7 @@
 import {
   JSONSchema7,
   JSONSchema7Definition,
-  JSONSchema7TypeName
+  JSONSchema7TypeName,
 } from "json-schema";
 import { Type, TypeKind } from "tst-reflect";
 import { getJsonSchemaTypeNameFromLiteralValue, Options, resolveType } from ".";
