@@ -13,17 +13,28 @@ export interface Options {
 
 export const DEFAULT_OPTIONS: Options = {};
 
-export function createJsonSchema(type: Type, options?: Options): JSONSchema7 {
+export function createJsonSchema(
+  type: Type | Type[],
+  options?: Options
+): JSONSchema7 {
   options = { ...DEFAULT_OPTIONS, ...options };
 
   const definitions: Record<string, JSONSchema7Definition> = {};
-  createDefinitionForType(type, definitions, {}, options);
+  if (Array.isArray(type)) {
+    for (const t of type) {
+      createDefinitionForType(t, definitions, {}, options);
+    }
+  } else {
+    createDefinitionForType(type, definitions, {}, options);
+  }
 
   const result: JSONSchema7 = {
-    $ref: `#/definitions/${encodeURIComponent(type.name)}`,
     $schema: "http://json-schema.org/draft-07/schema#",
     definitions,
   };
+  if (!Array.isArray(type)) {
+    result.$ref = `#/definitions/${encodeURIComponent(type.name)}`;
+  }
   if (options.schemaId) {
     result.$id = options.schemaId;
   }
