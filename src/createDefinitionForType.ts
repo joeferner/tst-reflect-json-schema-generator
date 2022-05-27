@@ -37,6 +37,10 @@ export function createDefinitionForType(
     return {};
   }
 
+  if (type.fullName === "void") {
+    return { type: "null" };
+  }
+
   if (
     type.fullName === "String" ||
     type.fullName === "string" ||
