@@ -17,4 +17,11 @@ describe("valid", () => {
       getType<IgnoreExportB>(),
     ]);
   });
+
+  test("ignore-export", () => {
+    assertValidSchema("valid/ignore-export", [
+      getType<IgnoreExportA>(),
+      getType<IgnoreExportB>(),
+    ]);
+  });
 });
